@@ -1,0 +1,28 @@
+# Core LSL requirements
+pylsl>=1.16.0
+
+# Configuration management
+PyYAML>=6.0
+
+# Video/Camera processing
+opencv-python>=4.8.0
+
+# Audio processing
+pyaudio>=0.2.11
+
+# Serial communication for BioHarness
+pyserial>=3.5
+
+# Scientific computing
+numpy>=1.24.0
+
+# Optional: Intel RealSense support (uncomment if using RealSense cameras)
+# pyrealsense2>=2.54.0
+
+# Optional: Additional sensor libraries
+# bluetooth-serial  # For Bluetooth BioHarness connection
+# python-can>=4.2.0  # For CAN bus sensors
+
+# Development/Testing
+# matplotlib>=3.7.0  # For data visualization
+# pandas>=2.0.0      # For data analysis
