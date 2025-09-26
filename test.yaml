@@ -1,6 +1,6 @@
 experiment_name: "TwoPersonStudy"
 participant_id: "P1"
-hostname: "midgard"  # or "huginn" for second machine
+hostname: "midgard"
 
 cameras:
   - id: 0
@@ -10,9 +10,14 @@ cameras:
     fps: 30
 
 microphone:
-  source: "RGB1" 
+  source: "RGB1"
   sample_rate: 44100
   channels: 1
+
+bioharness:
+  device_id: "BH12345"
+  stream_name: "BioHarness"
+  sample_rate: 250
 
 # LSL Stream configuration
 lsl_config:
