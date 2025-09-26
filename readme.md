@@ -1,5 +1,13 @@
 # Multi-Modal LSL Streaming Setup
 
+echo "# Multimodal-LSL-Streaming-Setup" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin git@github.com:ajay-naidu-96/Multimodal-LSL-Streaming-Setup.git
+git push -u origin main
+
 This system provides real-time streaming of multi-modal data (video, audio, physiological) using Lab Streaming Layer (LSL) for two-person experimental setups.
 
 ## Overview

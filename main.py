@@ -67,7 +67,7 @@ class MultiModalStreamer:
         success &= self._initialize_audio()
         
         # Initialize BioHarness stream
-        success &= self._initialize_bioharness()
+        # success &= self._initialize_bioharness()
         
         if success:
             print(f"All streams initialized for participant {self.config_manager.participant_id}")

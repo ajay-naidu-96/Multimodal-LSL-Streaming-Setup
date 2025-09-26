@@ -1,0 +1,21 @@
+experiment_name: "TwoPersonStudy"
+participant_id: "P1"
+hostname: "midgard"  # or "huginn" for second machine
+
+cameras:
+  - id: 0
+    name: "RGB1"
+    stream_type: "Video"
+    resolution: [640, 480]
+    fps: 30
+
+microphone:
+  source: "RGB1" 
+  sample_rate: 44100
+  channels: 1
+
+# LSL Stream configuration
+lsl_config:
+  chunk_size: 32
+  max_buffered: 360
+  stream_timeout: 5.0
