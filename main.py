@@ -22,7 +22,7 @@ import threading
 from config_manager import ConfigManager
 from camera_handler import CameraHandler, DepthCameraHandler
 from audio_handler import AudioHandler, CameraAudioExtractor
-from bioharness_handler import BioHarnessHandler, SimulatedBioHarnessHandler
+from integrated_bioharness import BioHarnessHandler
 
 
 class MultiModalStreamer:
@@ -64,10 +64,10 @@ class MultiModalStreamer:
         success &= self._initialize_cameras()
         
         # Initialize audio stream
-        success &= self._initialize_audio()
+        # success &= self._initialize_audio()
         
         # Initialize BioHarness stream
-        # success &= self._initialize_bioharness()
+        success &= self._initialize_bioharness()
         
         if success:
             print(f"All streams initialized for participant {self.config_manager.participant_id}")
@@ -139,14 +139,10 @@ class MultiModalStreamer:
         bio_config = self.config_manager.bioharness
         
         try:
-            if self.simulate:
-                self.bioharness_handler = SimulatedBioHarnessHandler(
-                    bio_config, self.config_manager.participant_id
-                )
-            else:
-                self.bioharness_handler = BioHarnessHandler(
-                    bio_config, self.config_manager.participant_id
-                )
+            
+            self.bioharness_handler = BioHarnessHandler(
+                bio_config, self.config_manager.participant_id
+            )
             
             if self.bioharness_handler.initialize():
                 print(f"✓ BioHarness initialized ({'simulated' if self.simulate else 'real'})")

@@ -15,9 +15,9 @@ microphone:
   channels: 1
 
 bioharness:
-  device_id: "BH12345"
+  device_id: "90:7B:C6:85:21:D7" 
   stream_name: "BioHarness"
-  sample_rate: 250
+  sample_rate: 1
 
 # LSL Stream configuration
 lsl_config:
