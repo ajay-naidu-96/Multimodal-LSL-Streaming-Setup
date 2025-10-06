@@ -22,7 +22,7 @@ import threading
 from config_manager import ConfigManager
 from camera_handler import CameraHandler, DepthCameraHandler
 from audio_handler import AudioHandler, CameraAudioExtractor
-from integrated_bioharness import BioHarnessHandler
+from bioharness_handler import BioHarnessHandler, SimulatedBioHarnessHandler
 
 
 class MultiModalStreamer:
@@ -67,7 +67,7 @@ class MultiModalStreamer:
         # success &= self._initialize_audio()
         
         # Initialize BioHarness stream
-        success &= self._initialize_bioharness()
+        # success &= self._initialize_bioharness()
         
         if success:
             print(f"All streams initialized for participant {self.config_manager.participant_id}")
@@ -76,33 +76,66 @@ class MultiModalStreamer:
         
         return success
     
+
     def _initialize_cameras(self) -> bool:
-        """Initialize all camera streams"""
+        """Initialize and start all camera streams"""
         cameras = self.config_manager.cameras
         if not cameras:
             print("No cameras configured")
             return True
-        
+
         success = True
         for camera_config in cameras:
             try:
+                # Select appropriate handler class
                 if camera_config.stream_type == "Depth":
                     handler = DepthCameraHandler(camera_config, self.config_manager.participant_id)
                 else:
                     handler = CameraHandler(camera_config, self.config_manager.participant_id)
                 
+                # Initialize camera
                 if handler.initialize():
+                    handler.start_streaming()  # <-- Start thread after init
                     self.camera_handlers.append(handler)
-                    print(f"✓ Camera {camera_config.name} initialized")
+                    print(f"✓ Camera {camera_config.name} initialized and streaming")
                 else:
                     print(f"✗ Failed to initialize camera {camera_config.name}")
                     success = False
-                    
+
             except Exception as e:
                 print(f"✗ Error initializing camera {camera_config.name}: {e}")
                 success = False
-        
+
         return success
+            
+
+    # def _initialize_cameras(self) -> bool:
+    #     """Initialize all camera streams"""
+    #     cameras = self.config_manager.cameras
+    #     if not cameras:
+    #         print("No cameras configured")
+    #         return True
+        
+    #     success = True
+    #     for camera_config in cameras:
+    #         try:
+    #             if camera_config.stream_type == "Depth":
+    #                 handler = DepthCameraHandler(camera_config, self.config_manager.participant_id)
+    #             else:
+    #                 handler = CameraHandler(camera_config, self.config_manager.participant_id)
+                
+    #             if handler.initialize():
+    #                 self.camera_handlers.append(handler)
+    #                 print(f"✓ Camera {camera_config.name} initialized")
+    #             else:
+    #                 print(f"✗ Failed to initialize camera {camera_config.name}")
+    #                 success = False
+                    
+    #         except Exception as e:
+    #             print(f"✗ Error initializing camera {camera_config.name}: {e}")
+    #             success = False
+        
+    #     return success
     
     def _initialize_audio(self) -> bool:
         """Initialize audio stream"""
@@ -139,10 +172,14 @@ class MultiModalStreamer:
         bio_config = self.config_manager.bioharness
         
         try:
-            
-            self.bioharness_handler = BioHarnessHandler(
-                bio_config, self.config_manager.participant_id
-            )
+            if self.simulate:
+                self.bioharness_handler = SimulatedBioHarnessHandler(
+                    bio_config, self.config_manager.participant_id
+                )
+            else:
+                self.bioharness_handler = BioHarnessHandler(
+                    bio_config, self.config_manager.participant_id
+                )
             
             if self.bioharness_handler.initialize():
                 print(f"✓ BioHarness initialized ({'simulated' if self.simulate else 'real'})")
