@@ -61,6 +61,7 @@ class StreamLogger:
         os.makedirs(os.path.join(log_folder, "audio"), exist_ok=True)
         os.makedirs(os.path.join(log_folder, "data"), exist_ok=True)
         os.makedirs(os.path.join(log_folder, "frames"), exist_ok=True)
+        os.makedirs(os.path.join(log_folder, "depth"), exist_ok=True)
         
         print(f"Created log folder: {log_folder}")
         return log_folder
@@ -115,6 +116,8 @@ class StreamLogger:
             headers = ['timestamp'] + [f'audio_sample_{i}' for i in range(channel_count)]
         elif stream_type == 'Video':
             headers = ['timestamp', 'frame_path', 'jpeg_size']
+        elif stream_type == 'Depth':
+            headers = ['timestamp', 'frame_path', 'min_depth', 'max_depth', 'mean_depth']
         else:
             headers = ['timestamp'] + [f'data_{i}' for i in range(channel_count)]
         
@@ -138,6 +141,20 @@ class StreamLogger:
         }
         
         print(f"  Video logger setup for {stream_name}")
+    
+    def _setup_depth_logger(self, stream_name: str, width: int = 1280, height: int = 800):
+        """Setup depth stream logging"""
+        depth_folder = os.path.join(self.log_folder, "depth", stream_name)
+        os.makedirs(depth_folder, exist_ok=True)
+        
+        self.video_writers[stream_name] = {
+            'folder': depth_folder,
+            'width': width,
+            'height': height,
+            'frame_count': 0
+        }
+        
+        print(f"  Depth logger setup for {stream_name}")
     
     def _setup_audio_logger(self, stream_name: str, sample_rate: int = 22050):
         """Setup WAV file logging for audio streams"""
@@ -214,6 +231,57 @@ class StreamLogger:
             except Exception as e:
                 if self.running:
                     print(f"Error in video logging for {stream_name}: {e}")
+                    time.sleep(0.1)
+    
+    def _log_depth_stream(self, stream_name: str, inlet: StreamInlet):
+        """Log depth stream data"""
+        print(f"Starting depth logging for {stream_name}")
+        
+        depth_info = self.video_writers[stream_name]
+        depth_folder = depth_info['folder']
+        width = depth_info['width']
+        height = depth_info['height']
+        frame_count = 0
+        
+        while self.running:
+            try:
+                sample, timestamp = inlet.pull_sample(timeout=1.0)
+                if sample:
+                    # Reshape flat array back to image
+                    depth_array = np.array(sample, dtype=np.float32).reshape((height, width))
+                    
+                    # Save as numpy file (preserves depth values)
+                    depth_filename = f"depth_{frame_count:06d}_{timestamp:.6f}.npy"
+                    depth_path = os.path.join(depth_folder, depth_filename)
+                    np.save(depth_path, depth_array)
+                    
+                    # Also save visualization as PNG
+                    depth_normalized = cv2.normalize(depth_array, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+                    depth_colormap = cv2.applyColorMap(depth_normalized, cv2.COLORMAP_JET)
+                    viz_path = depth_path.replace('.npy', '_viz.png')
+                    cv2.imwrite(viz_path, depth_colormap)
+                    
+                    # Log to CSV
+                    if stream_name in self.csv_writers:
+                        self.csv_writers[stream_name].writerow({
+                            'timestamp': timestamp,
+                            'frame_path': depth_path,
+                            'min_depth': float(np.min(depth_array)),
+                            'max_depth': float(np.max(depth_array)),
+                            'mean_depth': float(np.mean(depth_array))
+                        })
+                        self.csv_files[stream_name].flush()
+                    
+                    frame_count += 1
+                    
+                    if frame_count % 100 == 0:
+                        print(f"[{stream_name}] Logged {frame_count} depth frames")
+                    
+            except Exception as e:
+                if self.running:
+                    print(f"Error in depth logging for {stream_name}: {e}")
+                    import traceback
+                    traceback.print_exc()
                     time.sleep(0.1)
     
     def _log_audio_stream(self, stream_name: str, inlet: StreamInlet):
@@ -303,6 +371,13 @@ class StreamLogger:
                     args=(stream_name, inlet), 
                     daemon=True
                 )
+            elif stream_type == 'Depth':
+                self._setup_depth_logger(stream_name, width=1280, height=800)
+                thread = threading.Thread(
+                    target=self._log_depth_stream, 
+                    args=(stream_name, inlet), 
+                    daemon=True
+                )
             else:
                 thread = threading.Thread(
                     target=self._log_data_stream, 
@@ -331,7 +406,7 @@ class StreamLogger:
             csv_file.close()
         
         for video_info in self.video_writers.values():
-            if video_info['writer']:
+            if 'writer' in video_info and video_info['writer']:
                 video_info['writer'].release()
         
         for wav_file in self.audio_files.values():
@@ -361,7 +436,7 @@ class StreamLogger:
                 for file in files[:10]:  # Show first 10 files
                     file_path = os.path.join(root, file)
                     file_size = os.path.getsize(file_path)
-                    print(f"  {file} ({file_size} bytes)")
+                    print(f"  {file} ({file_size / 1024:.1f} KB)")
                 if len(files) > 10:
                     print(f"  ... and {len(files) - 10} more files")
         
@@ -403,6 +478,8 @@ def main():
         logger.run(args.duration)
     except Exception as e:
         print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 

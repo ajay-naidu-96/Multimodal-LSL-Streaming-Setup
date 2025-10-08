@@ -16,8 +16,8 @@ cameras:
   - id: "realsense"
     name: "RealSenseD555"
     stream_type: "Depth"
-    resolution: [1280, 720]  # Depth resolution
-    color_resolution: [1280, 800]  # RGB resolution
+    resolution: [1280, 800] 
+    # depth_resolution: [1280, 720]  
     fps: 30
 
 bioharness:

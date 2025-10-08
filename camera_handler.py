@@ -57,7 +57,7 @@ class CameraHandler:
     def initialize(self) -> bool:
         """Initialize camera and LSL outlets"""
         try:
-            self.cap = cv2.VideoCapture(self.config.id)
+            self.cap = cv2.VideoCapture(self.config.id, cv2.CAP_DSHOW)
             if not self.cap.isOpened():
                 print(f"Error: Could not open camera {self.config.id}")
                 return False
@@ -194,16 +194,15 @@ class DepthCameraHandler(CameraHandler):
             self.pipeline = rs.pipeline()
             config = rs.config()
             
-            # D555 supports 1280x720 depth and 1280x800 color
-            # Adjust based on your config or use native resolutions
+            fps = self.config.fps if self.config.fps <= 30 else 30
+
             depth_width = 1280
             depth_height = 720
             color_width = 1280
             color_height = 800
-            fps = self.config.fps if self.config.fps <= 30 else 30
             
-            config.enable_stream(rs.stream.depth, depth_width, depth_height, rs.format.z16, fps)
-            config.enable_stream(rs.stream.color, color_width, color_height, rs.format.rgb8, fps)
+            config.enable_stream(rs.stream.depth, depth_width, depth_height, rs.format.z16, 30)
+            config.enable_stream(rs.stream.color, color_width, color_height, rs.format.rgb8, 30)
             
             # Start pipeline
             self.pipeline.start(config)
@@ -227,11 +226,12 @@ class DepthCameraHandler(CameraHandler):
             depth_info = StreamInfo(
                 self.depth_stream_name,
                 'Depth',
-                channel_count=depth_width * depth_height,
+                channel_count=color_width * color_height,
                 nominal_srate=fps,
                 channel_format='float32',
                 source_id=f"{self.depth_stream_name}_{self.config.id}"
             )
+
             self.depth_outlet = StreamOutlet(depth_info)
             
             print(f"Initialized RealSense camera {self.config.name}")
